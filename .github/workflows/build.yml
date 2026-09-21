@@ -49,12 +49,6 @@ jobs:
           name: grr-linux-x86_64
           path: grr-linux-x86_64.tar.gz
 
-      - name: Attach to release (tags only)
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: grr-linux-x86_64.tar.gz
-
   windows:
     name: Windows x86_64
     runs-on: windows-latest
@@ -84,8 +78,34 @@ jobs:
           name: grr-windows-x86_64
           path: grr-windows-x86_64.zip
 
-      - name: Attach to release (tags only)
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+  release:
+    # Every push to main (or a v* tag) refreshes the single "latest" release
+    # with both binaries. PR builds get artifacts only. One job owns the
+    # release so asset replacement is deterministic — delete + recreate.
+    name: Refresh latest release
+    runs-on: ubuntu-latest
+    needs: [linux, windows]
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/download-artifact@v4
         with:
-          files: grr-windows-x86_64.zip
+          name: grr-linux-x86_64
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: grr-windows-x86_64
+
+      - name: Replace the latest release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete latest --cleanup-tag 2>/dev/null || true
+          gh release create latest \
+            grr-linux-x86_64.tar.gz grr-windows-x86_64.zip \
+            --title "Latest" \
+            --notes "grr — retro Windows Minesweeper in a ~10 MB native tinyjs window (no Electron).
+
+          - **grr-linux-x86_64.tar.gz** — extract, run \`./grr/minesweeper\` (needs libwebkit2gtk-4.1)
+          - **grr-windows-x86_64.zip** — extract, run \`grr\\minesweeper.exe\` (needs the WebView2 runtime)
+
+          Built from ${GITHUB_SHA:0:7}."
