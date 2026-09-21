@@ -3,7 +3,7 @@
 
 const LEVELS = {
   beginner:     { cols: 9,  rows: 9,  mines: 10  },
-  intermediate: { cols: 16, rows: 16, mines: 100 },
+  intermediate: { cols: 16, rows: 16, mines: 40  },
   expert:       { cols: 30, rows: 16, mines: 99  },
 };
 const FACES = {
@@ -85,6 +85,10 @@ function newGame() {
   updateMenuChecks();
   dialog.hidden = true;
   sync();
+  fitWindow();
+}
+
+function fitWindow() {
   requestAnimationFrame(() => {
     // Window size is device px; the page measures CSS px. The bounding
     // rect (not offsetWidth) reflects the page's zoom level, and on
@@ -241,6 +245,13 @@ smiley.addEventListener('click', newGame);
 document.getElementById('dok').addEventListener('click', () => { dialog.hidden = true; });
 document.getElementById('closebtn').addEventListener('click', () => tiny.quit());
 document.getElementById('minbtn').addEventListener('click', () => tiny.win.minimize());
+
+// Zoom dropdown — drive the page's zoom and refit the window to match
+const zoomInput = document.getElementById('zoom');
+zoomInput.addEventListener('change', () => {
+  document.documentElement.style.zoom = parseFloat(zoomInput.value);
+  fitWindow();
+});
 
 // ── menus ────────────────────────────────────────────────────
 

@@ -1,9 +1,9 @@
 /* Win 3.11 Minesweeper */
 * { margin: 0; padding: 0; box-sizing: border-box; }
-/* Classic 16px cells are too small on modern displays; scale the whole
-   page 1.5x (CSS `zoom` — supported by WebKitGTK, WebView2 and Safari.
-   Stacks with DPI scaling, and the window auto-fits via the
-   devicePixelRatio-aware setSize in app.js). */
+/* Classic 16px cells are too small on modern displays; the page is
+   zoomed (CSS `zoom` — supported by WebKitGTK, WebView2 and Safari,
+   stacks with DPI scaling, window auto-fits via fitWindow() in app.js).
+   1.5 is the default; the slider in #zoomrow drives documentElement.zoom. */
 html { zoom: 1.5; }
 html, body { height: 100%; }
 body {
@@ -148,6 +148,28 @@ button { font-family: inherit; }
 .c1 { color: #0000ff; } .c2 { color: #008000; } .c3 { color: #ff0000; }
 .c4 { color: #000080; } .c5 { color: #800000; } .c6 { color: #008080; }
 .c7 { color: #000; }    .c8 { color: #808080; }
+
+/* ── zoom strip ────────────────────────────────── */
+#zoomrow {
+  display: flex; align-items: center; gap: 6px;
+  margin: 0 8px 8px;
+  padding: 3px 6px;
+  border: 2px solid;
+  border-color: #808080 #fff #fff #808080;   /* sunken */
+  font-size: 12px;
+}
+/* A dropdown, not a slider: picking a value is a discrete click, so the
+   live window refit can't drag the control out from under the cursor. */
+#zoom {
+  flex: 1; margin: 0; padding: 1px 20px 1px 5px;
+  -webkit-appearance: none; appearance: none;
+  background: #c0c0c0 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='8'%3E%3Cpath d='M0 0h10L5 8z' fill='%23000'/%3E%3C/svg%3E") no-repeat right 5px center;
+  border: 2px solid;
+  border-color: #fff #404040 #404040 #fff;
+  box-shadow: inset -1px -1px 0 #808080, inset 1px 1px 0 #dfdfdf;
+  font-size: 12px; font-family: inherit;
+  cursor: default;
+}
 /* unicode that reads right at 16px */
 .f { font-size: 12px; line-height: 1; }
 .m { font-size: 11px; line-height: 1; }
