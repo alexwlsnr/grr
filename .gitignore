@@ -1,0 +1,15 @@
+# build output
+.build/
+dist/
+
+# deps
+node_modules/
+
+# agent harness scaffolding
+.agents/
+.claude/
+
+# logs & os cruft
+*.log
+.DS_Store
+Thumbs.db

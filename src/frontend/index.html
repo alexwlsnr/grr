@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Minesweeper</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="win">
+  <div id="titlebar" data-tiny-drag>
+    <span id="title">Minesweeper</span>
+    <span id="tbtns" data-tiny-nodrag>
+      <button id="minbtn" title="Minimize"><span class="g-min"></span></button>
+      <button id="closebtn" title="Close"><span class="g-x">&times;</span></button>
+    </span>
+  </div>
+
+  <div id="menubar">
+    <span class="menu" data-menu="game"><u>G</u>ame</span>
+    <span class="menu" data-menu="help"><u>H</u>elp</span>
+    <div class="dropdown" id="dd-game" hidden>
+      <div class="item" id="m-new" data-action="new">New Game<span class="accel">(F9)</span></div>
+      <div class="sep"></div>
+      <div class="item" id="m-beginner" data-action="beginner">Beginner</div>
+      <div class="item" id="m-intermediate" data-action="intermediate">Intermediate</div>
+      <div class="item" id="m-expert" data-action="expert">Expert</div>
+      <div class="sep"></div>
+      <div class="item" id="m-lives" data-action="lives">3 Lives</div>
+      <div class="sep"></div>
+      <div class="item" id="m-quit" data-action="quit">Quit</div>
+    </div>
+    <div class="dropdown" id="dd-help" hidden>
+      <div class="item" id="m-about" data-action="about">About Minesweeper&hellip;</div>
+    </div>
+  </div>
+
+  <div id="status">
+    <div class="led" id="mineled">010</div>
+    <div id="mid">
+      <button id="smiley" title="New game"></button>
+      <div id="lives" hidden>&#9829;&#9829;&#9829;</div>
+    </div>
+    <div class="led" id="timerled">000</div>
+  </div>
+
+  <div id="board"></div>
+
+  <div id="dialog" hidden>
+    <div id="dbox">
+      <div id="dmsg"></div>
+      <button id="dok">OK</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

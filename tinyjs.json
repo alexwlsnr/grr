@@ -1,0 +1,9 @@
+{
+  "name": "minesweeper",
+  "title": "Minesweeper",
+  "size": "250x390",
+  "id": "com.example.minesweeper",
+  "version": "0.1.0",
+  "minTinyjsVersion": "0.40.0",
+  "chrome": { "frame": false }
+}
