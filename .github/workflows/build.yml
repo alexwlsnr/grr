@@ -1,0 +1,88 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    name: Linux x86_64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tinyjs
+        run: |
+          curl -fsSL https://tinyjs.app/install | sh
+          # The installer symlinks into ~/.local/bin (already on the runner
+          # PATH); fall back to the tool dir if a future installer changes.
+          if ! command -v tinyjs >/dev/null; then
+            for d in "$HOME/.local/bin" "$HOME/.tinyjs/bin" "$HOME/.tinyjs"; do
+              if [ -e "$d/tinyjs" ]; then
+                echo "PATH=$d:$PATH" >> "$GITHUB_ENV"
+                break
+              fi
+            done
+          fi
+          tinyjs version
+
+      - name: Build
+        run: tinyjs build
+
+      - name: Package
+        run: |
+          # A portable folder: the compiled backend + the native launcher.
+          mkdir grr
+          cp dist/minesweeper dist/launcher grr/
+          tar --owner=0 --group=0 -czf grr-linux-x86_64.tar.gz grr
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: grr-linux-x86_64
+          path: grr-linux-x86_64.tar.gz
+
+      - name: Attach to release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: grr-linux-x86_64.tar.gz
+
+  windows:
+    name: Windows x86_64
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tinyjs and build
+        shell: pwsh
+        run: |
+          irm https://tinyjs.app/install.ps1 | iex
+          # The installer updates the user PATH, which this session can't
+          # see — add the tool dir directly.
+          $env:Path += ";$(Join-Path $env:LOCALAPPDATA 'tinyjs')"
+          tinyjs version
+          tinyjs build
+
+      - name: Package
+        shell: pwsh
+        run: |
+          # Portable folder: minesweeper.exe (frontend rides inside its TPK
+          # bundle) + launcher.exe.
+          Rename-Item dist grr
+          Compress-Archive -Path grr -DestinationPath grr-windows-x86_64.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: grr-windows-x86_64
+          path: grr-windows-x86_64.zip
+
+      - name: Attach to release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: grr-windows-x86_64.zip
