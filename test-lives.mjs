@@ -32,27 +32,22 @@ function makeGame(cols, rows, nMines) {
   }
 
   function reveal(startI) {
+    const c0 = cells[startI];
+    if (c0.revealed || c0.flagged || c0.marked) return null;
+    if (c0.mine) { c0.revealed = true; return startI; }
     const queue = [startI];
-    let hit = null;
-    
-    while (queue.length && hit === null) {
+    while (queue.length) {
       const i = queue.shift();
       const c = cells[i];
       if (c.revealed || c.flagged || c.marked) continue;
-      
+      if (c.mine) continue;   // cascade never opens mines
       c.revealed = true;
-      if (c.mine) {
-        hit = i;
-        break;
-      }
-      
       if (c.count) continue;
-      
       for (const j of neighbors(i)) {
         if (!cells[j].mine) queue.push(j);
       }
     }
-    return hit;
+    return null;
   }
 
   function hitMine(i, lives) {
@@ -78,9 +73,10 @@ function invariants(game, lives, hitCell = null) {
   
   for (let i = 0; i < cells.length; i++) {
     const c = cells[i];
-    if (c.mine && c.revealed && i !== hitCell) { 
-      console.log('FAIL: revealed mine at', i); 
-      failures++; 
+    // a revealed mine is the one just clicked, or a defused (marked) one
+    if (c.mine && c.revealed && i !== hitCell && !c.marked) {
+      console.log('FAIL: revealed mine at', i);
+      failures++;
     }
   }
   

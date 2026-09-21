@@ -187,43 +187,38 @@ function startTimer() {
 }
 
 function reveal(startI) {
-  // returns the index of the mine hit by a direct click, or null.
-  // Uses iterative BFS to avoid stack overflow on large boards.
-  // The cascade never opens a mine cell (like the real flood fill):
-  // in herd mode a mine may scurry onto a cell mid-cascade, but that
-  // hides the mine there — it doesn't kill you. Only clicking it does.
+  // Returns the index of the mine hit by a direct click, or null.
+  // Iterative BFS (no deep recursion on big boards). The cascade never
+  // opens a mine cell: in herd mode a mine may scurry onto a cell even
+  // after it is queued, so the fill re-checks at dequeue and skips it —
+  // only clicking a mine is fatal.
+  const c0 = cells[startI];
+  if (c0.revealed || c0.flagged || c0.marked) return null;
+  if (c0.mine) {
+    c0.revealed = true;
+    c0.el.classList.add('revealed', 'mine');
+    c0.el.textContent = '✸';
+    return startI;
+  }
   const queue = [startI];
-  let hit = null;
-  
-  while (queue.length && hit === null) {
+  while (queue.length) {
     const i = queue.shift();
     const c = cells[i];
     if (c.revealed || c.flagged || c.marked) continue;
-    
+    if (c.mine) continue;   // a mine scurried here after it was queued — skip
     c.revealed = true;
     c.el.classList.add('revealed');
-    
-    if (c.mine) {
-      c.el.textContent = '✸';
-      c.el.classList.add('mine');
-      hit = i;
-      break;
-    }
-    
     if (herdMode && !over && herd(i)) refreshCounts();   // mines scurry, numbers shift
-    
     if (c.count) {
       c.el.textContent = c.count;
       c.el.classList.add('c' + c.count);
       continue;
     }
-    
-    // flood fill stops at mines, never opens them
     for (const j of neighbors(i)) {
       if (!cells[j].mine) queue.push(j);
     }
   }
-  return hit;
+  return null;
 }
 
 function render() {
@@ -246,7 +241,8 @@ function winGame() {
   over = true;
   won = true;
   stopTimer();
-  for (const c of cells) if (c.mine && !c.flagged && !c.marked) { c.flagged = true; c.el.textContent = '⚑'; }
+  // auto-flag remaining mines and count them, so the mine LED reads 000
+  for (const c of cells) if (c.mine && !c.flagged && !c.marked) { c.flagged = true; c.el.textContent = '⚑'; flags++; }
   sync();
 }
 
