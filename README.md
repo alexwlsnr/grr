@@ -10,7 +10,7 @@ Built with [tinyjs](https://tinyjs.app): a plain-JS backend (compiled with [txik
 
 - **The real thing** — Beginner 9×9/10, Intermediate 16×16/100, Expert 30×16/99; your first click is always safe
 - Right-click to flag, **chording** (click a revealed number whose flags already match)
-- LED counters, the smiley, and the classics: *"Grrr. You lost."* / *"Ouch. You won."*
+- LED counters and the smiley — dead face when you lose, sunglasses when you win (no popups, like the real thing)
 - **3 Lives mode** (Game → 3 Lives): a mine costs a life and auto-flags itself instead of ending the game
 - Frameless native window with its own retro title bar — drag it to move the window
 - Window resizes itself to fit each board level
@@ -59,4 +59,4 @@ docs/screenshot.png
 
 ---
 
-*Named after the dialog that ends every bad move.*
+*Named after the sound you make when you click a mine.*

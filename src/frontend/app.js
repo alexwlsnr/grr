@@ -86,12 +86,14 @@ function newGame() {
   dialog.hidden = true;
   sync();
   requestAnimationFrame(() => {
-    // Window size is device px; the page measures CSS px. On scaled
-    // backends (X11 with a HiDPI Xft.dpi, scaled Wayland) multiply by the
-    // device pixel ratio or the window is too small for its own content.
+    // Window size is device px; the page measures CSS px. The bounding
+    // rect (not offsetWidth) reflects the page's zoom level, and on
+    // scaled backends (X11 with a HiDPI Xft.dpi, scaled Wayland) we
+    // must also multiply by the device pixel ratio — otherwise the
+    // window is too small for its own content.
+    const r = winEl.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
-    tiny.win.setSize(Math.round(winEl.offsetWidth * dpr),
-                     Math.round(winEl.offsetHeight * dpr));
+    tiny.win.setSize(Math.round(r.width * dpr), Math.round(r.height * dpr));
   });
 }
 
@@ -158,7 +160,6 @@ function lose() {
     if (!c.mine && c.flagged) { c.el.textContent = '✖'; c.el.classList.add('c3'); }
   }
   sync();
-  setTimeout(() => showDialog('Grrr. You lost.'), 350);
 }
 
 function winGame() {
@@ -168,7 +169,6 @@ function winGame() {
   timerId = null;
   for (const c of cells) if (c.mine && !c.flagged && !c.marked) { c.flagged = true; c.el.textContent = '⚑'; }
   sync();
-  setTimeout(() => showDialog('Ouch. You won.'), 350);
 }
 
 function checkWin() {
@@ -313,3 +313,4 @@ function showDialog(msg) {
 // ── init ─────────────────────────────────────────────────────
 
 newGame();
+

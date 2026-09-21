@@ -1,9 +1,17 @@
 /* Win 3.11 Minesweeper */
 * { margin: 0; padding: 0; box-sizing: border-box; }
+/* Classic 16px cells are too small on modern displays; scale the whole
+   page 1.5x (CSS `zoom` — supported by WebKitGTK, WebView2 and Safari.
+   Stacks with DPI scaling, and the window auto-fits via the
+   devicePixelRatio-aware setSize in app.js). */
+html { zoom: 1.5; }
 html, body { height: 100%; }
 body {
   background: #008080;
-  display: flex; align-items: center; justify-content: center;
+  /* safe: before the first auto-fit (or on a tiny window) content is
+     top-anchored instead of centered-then-clipped */
+  display: flex; align-items: safe center; justify-content: safe center;
+  overflow: hidden;
   font-family: "MS Sans Serif", Tahoma, "DejaVu Sans", sans-serif;
   user-select: none; -webkit-user-select: none;
   cursor: default;
