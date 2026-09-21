@@ -15,6 +15,7 @@ const FACES = {
 
 let level = 'beginner';
 let livesMode = false;
+let herdMode = false;   // mines scurry away from freshly revealed cells
 
 let cols, rows, mines;
 let cells = [];            // { mine, revealed, flagged, marked, count, el }
@@ -116,6 +117,50 @@ function placeMines(safeIdx) {
   }
 }
 
+// ── herd mode ────────────────────────────────────────────────
+// Revealing a cell makes every mine sitting next to it scurry one
+// square toward the nearest board edge (first legal direction wins;
+// a mine with no legal move is pinned). Numbers are recomputed
+// after the move, so the whole grid shifts under your eyes.
+function herd(i) {
+  let moved = false;
+  for (const j of neighbors(i)) {
+    const m = cells[j];
+    if (!m.mine || m.marked) continue;   // defused mines (3 lives) stay put
+    if (fleeMine(j) !== null) moved = true;
+  }
+  return moved;
+}
+
+function fleeMine(i) {
+  const x = i % cols, y = (i / cols) | 0;
+  const dirs = [
+    [y, -1, 0], [rows - 1 - y, 1, 0], [x, 0, -1], [cols - 1 - x, 0, 1],
+  ].sort((a, b) => a[0] - b[0]);        // nearest edge first, ties keep this order
+  for (const [, dr, dc] of dirs) {
+    const nx = x + dc, ny = y + dr;
+    if (nx < 0 || nx >= cols || ny < 0 || ny >= rows) continue;
+    const t = cells[ny * cols + nx];
+    if (t.revealed || t.mine || t.marked) continue;
+    cells[i].mine = false;
+    t.mine = true;
+    return ny * cols + nx;
+  }
+  return null;                           // pinned — cornered by revealed cells
+}
+
+function refreshCounts() {
+  for (let i = 0; i < cells.length; i++) {
+    const c = cells[i];
+    if (c.mine) continue;
+    c.count = neighbors(i).filter(j => cells[j].mine).length;
+    if (c.revealed && !c.mine) {
+      c.el.textContent = c.count || '';
+      c.el.className = 'cell' + (c.revealed ? ' revealed' : '') + (c.count ? ' c' + c.count : '');
+    }
+  }
+}
+
 function neighbors(i) {
   const x = i % cols, y = (i / cols) | 0, out = [];
   for (let dy = -1; dy <= 1; dy++)
@@ -135,14 +180,19 @@ function startTimer() {
 }
 
 function reveal(i) {
-  // returns the index of the mine hit, or null
+  // returns the index of the mine hit by a direct click, or null.
+  // The cascade never opens a mine cell (like the real flood fill):
+  // in herd mode a mine may scurry onto a cell mid-cascade, but that
+  // hides the mine there — it doesn't kill you. Only clicking it does.
   const c = cells[i];
   if (c.revealed || c.flagged || c.marked) return null;
   c.revealed = true;
   c.el.classList.add('revealed');
   if (c.mine) { c.el.textContent = '✸'; c.el.classList.add('mine'); return i; }
+  if (herdMode && !over && herd(i)) refreshCounts();   // mines scurry, numbers shift
   if (c.count) { c.el.textContent = c.count; c.el.classList.add('c' + c.count); return null; }
   for (const j of neighbors(i)) {
+    if (cells[j].mine) continue;   // flood fill stops at mines, never opens them
     const hit = reveal(j);
     if (hit !== null) return hit;
   }
@@ -293,9 +343,10 @@ function doAction(a) {
     case 'intermediate':   if (level !== 'intermediate') { level = 'intermediate'; newGame(); } break;
     case 'expert':         if (level !== 'expert') { level = 'expert'; newGame(); } break;
     case 'lives':          livesMode = !livesMode; newGame(); break;
+    case 'herd':           herdMode = !herdMode; newGame(); break;
     case 'quit':           tiny.quit(); break;
     case 'about':
-      showDialog('Minesweeper\n\ntinyjs demo — WebKit window, ~6 MB, no Electron.');
+      showDialog('Minesweeper\n\ntinyjs demo — WebKit window, ~6 MB, no Electron.\n\nHerd Mode (Game menu): mines scurry toward the nearest\nedge whenever you reveal a cell next to them.\nFlush them into corners, then clear the board.');
       break;
   }
 }
@@ -305,6 +356,7 @@ function updateMenuChecks() {
   document.getElementById('m-intermediate').classList.toggle('checked', level === 'intermediate');
   document.getElementById('m-expert').classList.toggle('checked', level === 'expert');
   document.getElementById('m-lives').classList.toggle('checked', livesMode);
+  document.getElementById('m-herd').classList.toggle('checked', herdMode);
 }
 
 document.addEventListener('click', closeMenus);
