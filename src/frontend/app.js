@@ -27,6 +27,11 @@ let flags = 0;
 let time = 0;
 let timerId = null;
 
+function stopTimer() {
+  clearInterval(timerId);
+  timerId = null;
+}
+
 const board = document.getElementById('board');
 const mineLed = document.getElementById('mineled');
 const timerLed = document.getElementById('timerled');
@@ -69,8 +74,7 @@ function newGame() {
   lives = 3;
   flags = 0;
   time = 0;
-  clearInterval(timerId);
-  timerId = null;
+  stopTimer();
 
   winEl.style.width = cols * 16 + 20 + 'px';
   board.style.gridTemplateColumns = `repeat(${cols}, 16px)`;
@@ -135,9 +139,12 @@ function herd(i) {
 function fleeMine(i) {
   const x = i % cols, y = (i / cols) | 0;
   const dirs = [
-    [y, -1, 0], [rows - 1 - y, 1, 0], [x, 0, -1], [cols - 1 - x, 0, 1],
-  ].sort((a, b) => a[0] - b[0]);        // nearest edge first, ties keep this order
-  for (const [, dr, dc] of dirs) {
+    { dist: y,        dr: -1, dc: 0 },   // top
+    { dist: rows-1-y, dr:  1, dc: 0 },   // bottom
+    { dist: x,        dr:  0, dc: -1 },  // left
+    { dist: cols-1-x, dr:  0, dc: 1 },   // right
+  ].sort((a, b) => a.dist - b.dist);     // nearest edge first, ties keep this order
+  for (const { dr, dc } of dirs) {
     const nx = x + dc, ny = y + dr;
     if (nx < 0 || nx >= cols || ny < 0 || ny >= rows) continue;
     const t = cells[ny * cols + nx];
@@ -175,28 +182,48 @@ function neighbors(i) {
 function startTimer() {
   timerId = setInterval(() => {
     if (time < 99) { time++; setLed(timerLed, time); }
-    else clearInterval(timerId), (timerId = null);
+    else stopTimer();
   }, 1000);
 }
 
-function reveal(i) {
+function reveal(startI) {
   // returns the index of the mine hit by a direct click, or null.
+  // Uses iterative BFS to avoid stack overflow on large boards.
   // The cascade never opens a mine cell (like the real flood fill):
   // in herd mode a mine may scurry onto a cell mid-cascade, but that
   // hides the mine there — it doesn't kill you. Only clicking it does.
-  const c = cells[i];
-  if (c.revealed || c.flagged || c.marked) return null;
-  c.revealed = true;
-  c.el.classList.add('revealed');
-  if (c.mine) { c.el.textContent = '✸'; c.el.classList.add('mine'); return i; }
-  if (herdMode && !over && herd(i)) refreshCounts();   // mines scurry, numbers shift
-  if (c.count) { c.el.textContent = c.count; c.el.classList.add('c' + c.count); return null; }
-  for (const j of neighbors(i)) {
-    if (cells[j].mine) continue;   // flood fill stops at mines, never opens them
-    const hit = reveal(j);
-    if (hit !== null) return hit;
+  const queue = [startI];
+  let hit = null;
+  
+  while (queue.length && hit === null) {
+    const i = queue.shift();
+    const c = cells[i];
+    if (c.revealed || c.flagged || c.marked) continue;
+    
+    c.revealed = true;
+    c.el.classList.add('revealed');
+    
+    if (c.mine) {
+      c.el.textContent = '✸';
+      c.el.classList.add('mine');
+      hit = i;
+      break;
+    }
+    
+    if (herdMode && !over && herd(i)) refreshCounts();   // mines scurry, numbers shift
+    
+    if (c.count) {
+      c.el.textContent = c.count;
+      c.el.classList.add('c' + c.count);
+      continue;
+    }
+    
+    // flood fill stops at mines, never opens them
+    for (const j of neighbors(i)) {
+      if (!cells[j].mine) queue.push(j);
+    }
   }
-  return null;
+  return hit;
 }
 
 function render() {
@@ -207,8 +234,7 @@ function render() {
 
 function lose() {
   over = true;
-  clearInterval(timerId);
-  timerId = null;
+  stopTimer();
   for (const c of cells) {
     if (c.mine && !c.flagged && !c.marked) { c.el.textContent = '✸'; c.el.classList.add('mine'); }
     if (!c.mine && c.flagged) { c.el.textContent = '✖'; c.el.classList.add('c3'); }
@@ -219,8 +245,7 @@ function lose() {
 function winGame() {
   over = true;
   won = true;
-  clearInterval(timerId);
-  timerId = null;
+  stopTimer();
   for (const c of cells) if (c.mine && !c.flagged && !c.marked) { c.flagged = true; c.el.textContent = '⚑'; }
   sync();
 }

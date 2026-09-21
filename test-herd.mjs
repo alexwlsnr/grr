@@ -35,9 +35,12 @@ function makeGame(cols, rows, nMines) {
   function fleeMine(i) {
     const x = i % cols, y = (i / cols) | 0;
     const dirs = [
-      [y, -1, 0], [rows - 1 - y, 1, 0], [x, 0, -1], [cols - 1 - x, 0, 1],
-    ].sort((a, b) => a[0] - b[0]);
-    for (const [, dr, dc] of dirs) {
+      { dist: y,        dr: -1, dc: 0 },   // top
+      { dist: rows-1-y, dr:  1, dc: 0 },   // bottom
+      { dist: x,        dr:  0, dc: -1 },  // left
+      { dist: cols-1-x, dr:  0, dc: 1 },   // right
+    ].sort((a, b) => a.dist - b.dist);
+    for (const { dr, dc } of dirs) {
       const nx = x + dc, ny = y + dr;
       if (nx < 0 || nx >= cols || ny < 0 || ny >= rows) continue;
       const t = cells[ny * cols + nx];
@@ -68,19 +71,31 @@ function makeGame(cols, rows, nMines) {
     }
   }
 
-  function reveal(i) {
-    const c = cells[i];
-    if (c.revealed || c.flagged || c.marked) return null;
-    c.revealed = true;
-    if (c.mine) return i;
-    if (g.herd && herd(i)) refreshCounts();
-    c.el.textContent = c.count || '';
-    if (c.count) return null;
-    for (const j of neighbors(i)) {
-      if (cells[j].mine) continue;   // flood fill stops at mines
-      const hit = reveal(j); if (hit !== null) return hit;
+  function reveal(startI) {
+    const queue = [startI];
+    let hit = null;
+    
+    while (queue.length && hit === null) {
+      const i = queue.shift();
+      const c = cells[i];
+      if (c.revealed || c.flagged || c.marked) continue;
+      
+      c.revealed = true;
+      if (c.mine) {
+        hit = i;
+        break;
+      }
+      
+      if (g.herd && herd(i)) refreshCounts();
+      c.el.textContent = c.count || '';
+      
+      if (c.count) continue;
+      
+      for (const j of neighbors(i)) {
+        if (!cells[j].mine) queue.push(j);
+      }
     }
-    return null;
+    return hit;
   }
 
   return { g, neighbors, placeMines, reveal, cells };
