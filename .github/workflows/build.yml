@@ -16,6 +16,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install WebKitGTK (the tinyjs installer checks for it)
+        run: sudo apt install -y libwebkit2gtk-4.1-0
+
       - name: Install tinyjs
         run: |
           curl -fsSL https://tinyjs.app/install | sh
