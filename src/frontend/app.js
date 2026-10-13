@@ -44,8 +44,8 @@ const winEl = document.getElementById('win');
 // ── LEDs & faces ─────────────────────────────────────────────
 
 function setLed(el, v) {
-  const s = String(Math.max(-99, Math.min(999, v))).padStart(3, '0');
-  el.textContent = s;
+  const n = Math.max(-99, Math.min(999, v));
+  el.textContent = n < 0 ? '-' + String(-n).padStart(2, '0') : String(n).padStart(3, '0');
 }
 
 function setFace(k) {
@@ -130,7 +130,7 @@ function herd(i) {
   let moved = false;
   for (const j of neighbors(i)) {
     const m = cells[j];
-    if (!m.mine || m.marked) continue;   // defused mines (3 lives) stay put
+    if (!m.mine || m.marked) continue;   // defused mines (lives mode) stay put
     if (fleeMine(j) !== null) moved = true;
   }
   return moved;
@@ -274,8 +274,8 @@ board.addEventListener('click', e => {
   if (!el) return;
   const i = +el.dataset.i;
   const c = cells[i];
+  if (c.flagged || c.marked) return;   // flags are not moves: don't start the game on one
   if (!started) { started = true; placeMines(i); startTimer(); }
-  if (c.flagged || c.marked) return;
   let hit = null;
   if (c.revealed) {
     // chord: all adjacent mines already flagged → open the rest

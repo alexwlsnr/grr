@@ -2,7 +2,7 @@ name: build
 
 on:
   push:
-    branches: [main]
+    branches: ['**']
     tags: ['v*']
   pull_request:
 
@@ -10,9 +10,33 @@ permissions:
   contents: write
 
 jobs:
+  test:
+    # Runs the real app.js in a VM with a stubbed DOM (test/), plus the
+    # standalone simulations. A failure here blocks every build.
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Syntax check
+        run: node --check src/frontend/app.js
+
+      - name: Unit tests (real app.js)
+        run: node --test test/app.test.mjs
+
+      - name: Simulation tests
+        run: |
+          node test-herd.mjs
+          node test-lives.mjs
+
   linux:
     name: Linux x86_64
     runs-on: ubuntu-latest
+    needs: test
     steps:
       - uses: actions/checkout@v4
 
@@ -54,6 +78,7 @@ jobs:
   windows:
     name: Windows x86_64
     runs-on: windows-latest
+    needs: test
     steps:
       - uses: actions/checkout@v4
 
@@ -81,13 +106,18 @@ jobs:
           path: grr-windows-x86_64.zip
 
   release:
-    # Every push to main (or a v* tag) refreshes the single "latest" release
-    # with both binaries. PR builds get artifacts only. One job owns the
-    # release so asset replacement is deterministic — delete + recreate.
-    name: Refresh latest release
+    # Pushes to main (or a v* tag) refresh the single "latest" release with
+    # both binaries. Pushes to any other branch refresh that branch's
+    # prerelease "pre-<branch>", which never touches "latest". PR builds get
+    # artifacts only. One job owns all releases, and the concurrency group
+    # serialises them so delete + recreate can't race.
+    name: Refresh release
     runs-on: ubuntu-latest
     needs: [linux, windows]
     if: github.event_name == 'push'
+    concurrency:
+      group: release
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4  # gh needs a repo to resolve the remote + tag
 
@@ -99,17 +129,27 @@ jobs:
         with:
           name: grr-windows-x86_64
 
-      - name: Replace the latest release
+      - name: Replace the release for this push
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REF: ${{ github.ref }}
         run: |
-          gh release delete latest --cleanup-tag 2>/dev/null || true
-          gh release create latest \
-            grr-linux-x86_64.tar.gz grr-windows-x86_64.zip \
-            --title "Latest" \
-            --notes "grr — retro Windows Minesweeper in a ~10 MB native tinyjs window (no Electron).
+          ASSETS="grr-linux-x86_64.tar.gz grr-windows-x86_64.zip"
+          BODY="grr — retro Windows Minesweeper in a ~10 MB native tinyjs window (no Electron).
 
           - **grr-linux-x86_64.tar.gz** — extract, run \`./grr/minesweeper\` (needs libwebkit2gtk-4.1)
           - **grr-windows-x86_64.zip** — extract, run \`grr\\minesweeper.exe\` (needs the WebView2 runtime)
 
-          Built from ${GITHUB_SHA:0:7}."
+          Built from ${GITHUB_SHA:0:7} (${REF#refs/heads/})."
+
+          if [ "$REF" = "refs/heads/main" ] || [[ "$REF" == refs/tags/v* ]]; then
+            gh release delete latest --yes --cleanup-tag 2>/dev/null || true
+            gh release create latest $ASSETS --title "Latest" --notes "$BODY"
+          else
+            # Branch push: one prerelease per branch. Slashes are not allowed
+            # in the tag, so they become dashes.
+            TAG="pre-$(echo "${REF#refs/heads/}" | tr '/' '-')"
+            gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+            gh release create "$TAG" $ASSETS --prerelease --target "$GITHUB_SHA" \
+              --title "Prerelease: ${REF#refs/heads/}" --notes "$BODY"
+          fi

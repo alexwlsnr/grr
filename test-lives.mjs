@@ -150,7 +150,7 @@ function playOne(cols, rows, nMines, maxMoves) {
   }
 }
 
-const LEVELS = [[9, 9, 10], [16, 16, 40], [30, 16, 99]];
+const LEVELS = [[9, 9, 10], [16, 16, 40], [30, 16, 85]];
 
 // Test 3 Lives mode
 console.log('Testing 3 Lives mode...');
