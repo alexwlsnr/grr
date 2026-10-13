@@ -139,7 +139,7 @@ function playOne(cols, rows, nMines, herd, moves) {
   return game;
 }
 
-const LEVELS = [[9, 9, 10], [16, 16, 40], [30, 16, 99]];
+const LEVELS = [[9, 9, 10], [16, 16, 40], [30, 16, 85]];
 for (let trial = 0; trial < 3000; trial++) {
   const [c, r, m] = LEVELS[trial % 3];
   playOne(c, r, m, true, 200);

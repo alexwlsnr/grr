@@ -3,8 +3,8 @@
 /* Classic 16px cells are too small on modern displays; the page is
    zoomed (CSS `zoom` — supported by WebKitGTK, WebView2 and Safari,
    stacks with DPI scaling, window auto-fits via fitWindow() in app.js).
-   1.5 is the default; the slider in #zoomrow drives documentElement.zoom. */
-html { zoom: 1.5; }
+   2.5 is the default; the slider in #zoomrow drives documentElement.zoom. */
+html { zoom: 2.5; }
 html, body { height: 100%; }
 body {
   background: #008080;

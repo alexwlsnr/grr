@@ -2,9 +2,9 @@
 // hosts the window.
 
 const LEVELS = {
-  beginner:     { cols: 9,  rows: 9,  mines: 10  },
-  intermediate: { cols: 16, rows: 16, mines: 40  },
-  expert:       { cols: 30, rows: 16, mines: 99  },
+  beginner:     { cols: 9,  rows: 9,  mines: 10, lives: 3 },
+  intermediate: { cols: 16, rows: 16, mines: 40, lives: 3 },
+  expert:       { cols: 30, rows: 16, mines: 85, lives: 5 },
 };
 const FACES = {
   ok:   '<svg viewBox="0 0 24 24"><g fill="none" stroke="#000" stroke-width="1.6"><circle cx="12" cy="12" r="9.6"/><path d="M8 14.2q4 3.6 8 0"/></g><circle cx="8.6" cy="9.4" r="1.25"/><circle cx="15.4" cy="9.4" r="1.25"/></svg>',
@@ -13,11 +13,11 @@ const FACES = {
   dead: '<svg viewBox="0 0 24 24"><g fill="none" stroke="#000" stroke-width="1.6"><circle cx="12" cy="12" r="9.6"/><path d="M12 17.5q4-3.6 8-0" transform="translate(-4 0)"/><path d="M6.8 7.4l2.4 2.4m0-2.4l-2.4 2.4M14.8 7.4l2.4 2.4m0-2.4l-2.4 2.4"/></g></svg>',
 };
 
-let level = 'beginner';
-let livesMode = false;
+let level = 'intermediate';
+let livesMode = true;
 let herdMode = false;   // mines scurry away from freshly revealed cells
 
-let cols, rows, mines;
+let cols, rows, mines, maxLives;
 let cells = [];            // { mine, revealed, flagged, marked, count, el }
 let started = false;       // mines placed (after first click)
 let over = false;
@@ -54,7 +54,7 @@ function setFace(k) {
 
 function setLivesDisplay() {
   livesEl.hidden = !livesMode;
-  livesEl.textContent = '♥'.repeat(lives) + '♡'.repeat(3 - lives);
+  livesEl.textContent = '♥'.repeat(lives) + '♡'.repeat(maxLives - lives);
 }
 
 function sync() {
@@ -67,11 +67,11 @@ function sync() {
 // ── game ─────────────────────────────────────────────────────
 
 function newGame() {
-  ({ cols, rows, mines } = LEVELS[level]);
+  ({ cols, rows, mines, lives: maxLives } = LEVELS[level]);
   started = false;
   over = false;
   won = false;
-  lives = 3;
+  lives = maxLives;
   flags = 0;
   time = 0;
   stopTimer();
@@ -181,7 +181,7 @@ function neighbors(i) {
 
 function startTimer() {
   timerId = setInterval(() => {
-    if (time < 99) { time++; setLed(timerLed, time); }
+    if (time < 999) { time++; setLed(timerLed, time); }
     else stopTimer();
   }, 1000);
 }
@@ -377,6 +377,7 @@ function updateMenuChecks() {
   document.getElementById('m-intermediate').classList.toggle('checked', level === 'intermediate');
   document.getElementById('m-expert').classList.toggle('checked', level === 'expert');
   document.getElementById('m-lives').classList.toggle('checked', livesMode);
+  document.getElementById('m-lives').textContent = `${maxLives} Lives`;
   document.getElementById('m-herd').classList.toggle('checked', herdMode);
 }
 
