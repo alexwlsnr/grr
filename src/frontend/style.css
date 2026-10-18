@@ -149,6 +149,16 @@ button { font-family: inherit; }
 .c4 { color: #000080; } .c5 { color: #800000; } .c6 { color: #008080; }
 .c7 { color: #000; }    .c8 { color: #808080; }
 
+/* paused: hide the cells (keeping layout) and cover the board */
+#board.paused { position: relative; }
+#board.paused .cell { visibility: hidden; }
+#board.paused::after {
+  content: "Paused";
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: bold;
+}
+
 /* ── zoom strip ────────────────────────────────── */
 #zoomrow {
   display: flex; align-items: center; gap: 6px;

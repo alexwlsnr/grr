@@ -13,6 +13,7 @@ Built with [tinyjs](https://tinyjs.app): a plain-JS backend (compiled with [txik
 - LED counters and the smiley — dead face when you lose, sunglasses when you win (no popups, like the real thing)
 - **Lives mode** (on by default; Game → Lives; 3 lives, 5 on Expert): a mine costs a life and auto-flags itself instead of ending the game
 - **Herd Mode** (Game → Herd Mode): mines are alive — revealing a cell next to a mine makes it scurry one square toward the nearest edge, and all numbers shift. Flush mines into corners, then clear the board
+- **Pause** (Game → Pause, or `P`): stops the clock and hides the board; click the board to resume. The game also pauses itself when the window loses focus or is minimized
 - Frameless native window with its own retro title bar — drag it to move the window
 - Window resizes itself to fit each board level
 

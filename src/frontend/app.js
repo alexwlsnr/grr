@@ -22,6 +22,7 @@ let cells = [];            // { mine, revealed, flagged, marked, count, el }
 let started = false;       // mines placed (after first click)
 let over = false;
 let won = false;
+let paused = false;        // timer stopped, board hidden (manual or on focus loss)
 let lives = 3;
 let flags = 0;
 let time = 0;
@@ -75,6 +76,7 @@ function newGame() {
   flags = 0;
   time = 0;
   stopTimer();
+  setPaused(false);
 
   winEl.style.width = cols * 16 + 20 + 'px';
   board.style.gridTemplateColumns = `repeat(${cols}, 16px)`;
@@ -221,6 +223,27 @@ function reveal(startI) {
   return null;
 }
 
+// ── pause ────────────────────────────────────────────────────
+// Only a game in progress can pause. The board is covered while paused
+// so you can't study it off the clock; clicking it resumes.
+function setPaused(p) {
+  paused = p;
+  board.classList.toggle('paused', p);
+  document.getElementById('m-pause').classList.toggle('checked', p);
+}
+
+function pause() {
+  if (!started || over || paused) return;
+  stopTimer();
+  setPaused(true);
+}
+
+function resume() {
+  if (!paused) return;
+  setPaused(false);
+  startTimer();
+}
+
 function render() {
   for (const c of cells) {
     c.el.textContent = c.marked ? '✸' : c.flagged ? '⚑' : c.revealed ? (c.count || '') : '';
@@ -269,6 +292,7 @@ function hitMine(i) {
 // ── input ────────────────────────────────────────────────────
 
 board.addEventListener('click', e => {
+  if (paused) { resume(); return; }
   if (over) return;
   const el = e.target.closest('.cell');
   if (!el) return;
@@ -292,7 +316,7 @@ board.addEventListener('click', e => {
 
 board.addEventListener('contextmenu', e => {
   e.preventDefault();
-  if (over) return;
+  if (over || paused) return;
   const el = e.target.closest('.cell');
   if (!el) return;
   const i = +el.dataset.i;
@@ -306,10 +330,14 @@ board.addEventListener('contextmenu', e => {
 
 board.addEventListener('mousedown', e => {
   const el = e.target.closest('.cell');
-  if (e.button === 0 && !over && el && !el.classList.contains('revealed'))
+  if (e.button === 0 && !over && !paused && el && !el.classList.contains('revealed'))
     setFace('oh');
 });
 board.addEventListener('mouseup', () => { if (!over) sync(); });
+
+// Auto-pause when the window loses focus or is minimized/hidden
+window.addEventListener('blur', pause);
+document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
 
 smiley.addEventListener('click', newGame);
 
@@ -360,6 +388,7 @@ document.querySelectorAll('.item').forEach(it => {
 function doAction(a) {
   switch (a) {
     case 'new':            newGame(); break;
+    case 'pause':          paused ? resume() : pause(); break;
     case 'beginner':       if (level !== 'beginner') { level = 'beginner'; newGame(); } break;
     case 'intermediate':   if (level !== 'intermediate') { level = 'intermediate'; newGame(); } break;
     case 'expert':         if (level !== 'expert') { level = 'expert'; newGame(); } break;
@@ -367,7 +396,7 @@ function doAction(a) {
     case 'herd':           herdMode = !herdMode; newGame(); break;
     case 'quit':           tiny.quit(); break;
     case 'about':
-      showDialog('Minesweeper\n\ntinyjs demo — WebKit window, ~6 MB, no Electron.\n\nHerd Mode (Game menu): mines scurry toward the nearest\nedge whenever you reveal a cell next to them.\nFlush them into corners, then clear the board.');
+      showDialog('Minesweeper\n\ntinyjs demo — WebKit window, ~6 MB, no Electron.\n\nHerd Mode (Game menu): mines scurry toward the nearest\nedge whenever you reveal a cell next to them.\nFlush them into corners, then clear the board.\n\nPause with P — the game also pauses itself\nwhen the window loses focus.');
       break;
   }
 }
@@ -385,6 +414,7 @@ document.addEventListener('click', closeMenus);
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeMenus();
   if (e.key === 'F9') { e.preventDefault(); newGame(); }
+  if (e.key === 'p' || e.key === 'P' || e.key === 'Pause') paused ? resume() : pause();
 });
 
 // ── dialog ───────────────────────────────────────────────────
