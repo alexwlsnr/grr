@@ -50,6 +50,9 @@ jobs:
         with:
           name: grr-linux-x86_64
           path: grr-linux-x86_64.tar.gz
+          # The release keeps the latest binaries; build artifacts only need to
+          # outlive the release job and a PR review.
+          retention-days: 7
 
   windows:
     name: Windows x86_64
@@ -79,6 +82,7 @@ jobs:
         with:
           name: grr-windows-x86_64
           path: grr-windows-x86_64.zip
+          retention-days: 7
 
   release:
     # Every push to main (or a v* tag) refreshes the single "latest" release
